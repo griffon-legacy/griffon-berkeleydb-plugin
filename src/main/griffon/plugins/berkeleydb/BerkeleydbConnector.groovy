@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import griffon.util.CallableWithArgs
 import griffon.util.Environment as GE
 import com.sleepycat.je.*
 import com.sleepycat.persist.*
-import java.util.concurrent.ConcurrentHashMap
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -30,9 +29,7 @@ import org.slf4j.LoggerFactory
  * @author Andres Almiray
  */
 @Singleton
-final class BerkeleydbConnector {
-    private final Map ENTITY_STORES = new ConcurrentHashMap()
-    private final Map DATABASES = new ConcurrentHashMap()
+final class BerkeleydbConnector implements BerkeleydbProvider {
     private static final Logger LOG = LoggerFactory.getLogger(BerkeleydbConnector)
     private final Object[] lock = new Object[0]
     private boolean connected = false
@@ -41,33 +38,6 @@ final class BerkeleydbConnector {
     private final ConfigSlurper configSlurper = new ConfigSlurper(GE.current.name)
 
     final EnvironmentConfig envConfig = new EnvironmentConfig()
-
-    static void enhance(MetaClass mc) {
-        mc.withBerkeleyEnv = {Closure closure ->
-            EnvironmentHolder.instance.withBerkeleyEnv(closure)
-        }
-        mc.withBerkeleyEnv << {CallableWithArgs callable ->
-            EnvironmentHolder.instance.withBerkeleyEnv(callable)
-        }
-        mc.withEntityStore = {Map params = [:], Closure closure ->
-            BerkeleydbConnector.instance.withEntityStore(params, closure)
-        }
-        mc.withEntityStore << {Map params = [:], CallableWithArgs callable ->
-            BerkeleydbConnector.instance.withEntityStore(params, callable)
-        }
-        mc.withBerkeleyDb = {Map params = [:], Closure closure ->
-            BerkeleydbConnector.instance.withBerkeleyDb(params, closure)
-        }
-        mc.withBerkeleyDb << {Map params = [:], CallableWithArgs callable ->
-            BerkeleydbConnector.instance.withBerkeleyDb(params, callable)
-        }
-        mc.withBerkeleyCursor = {Map params = [:], Closure closure ->
-            BerkeleydbConnector.instance.withBerkeleyCursor(params, closure)
-        }
-        mc.withBerkeleyCursor << {Map params = [:], CallableWithArgs callable ->
-            BerkeleydbConnector.instance.withBerkeleyCursor(params, callable)
-        }
-    }
 
     Object withBerkeleyEnv(Closure closure) {
         EnvironmentHolder.instance.withBerkeleyEnv(closure)
@@ -78,173 +48,27 @@ final class BerkeleydbConnector {
     }
 
     Object withEntityStore(Map params = [:], Closure closure) {
-        if(!params.id) {
-            throw new IllegalArgumentException('You must specify a value for id: when using withEntityStore().')
-        }
-
-        Map storeBucket = ENTITY_STORES[params.id]
-        if(!storeBucket) {
-            storeBucket = createStoreBucket(params.id)
-            ENTITY_STORES[params.id] = storeBucket
-        }
-
-        if(storeBucket.store.config.transactional) {
-            TransactionConfig txnConfig = params.txnConfig ?: storeBucket.txnConfig
-            Transaction txn = EnvironmentHolder.instance.environment.beginTransaction(null, txnConfig)
-            try {
-                Object result = closure(storeBucket.store, txn)
-                txn.commit()
-                return result
-            } catch(Exception ex) {
-                txn.abort()
-                throw ex
-            }
-        } else {
-            return closure(storeBucket.store, null)
-        }
+        return EnvironmentHolder.instance.withEntityStore(callable)
     }
 
     public <T> T withEntityStore(Map params = [:], CallableWithArgs<T> callable) {
-        if(!params.id) {
-            throw new IllegalArgumentException('You must specify a value for id: when using withEntityStore().')
-        }
-
-        Map storeBucket = ENTITY_STORES[params.id]
-        if(!storeBucket) {
-            storeBucket = createStoreBucket(params.id)
-            ENTITY_STORES[params.id] = storeBucket
-        }
-
-        if(storeBucket.store.config.transactional) {
-            TransactionConfig txnConfig = params.txnConfig ?: storeBucket.txnConfig
-            Transaction txn = EnvironmentHolder.instance.environment.beginTransaction(null, txnConfig)
-            try {
-                callable.args = [storeBucket.store, txn] as Object[]
-                T result = callable.run()
-                txn.commit()
-                return result
-            } catch(Exception ex) {
-                txn.abort()
-                throw ex
-            }
-        } else {
-            callable.args = [storeBucket.store, null] as Object[]
-            return callable.run()
-        }
+        return EnvironmentHolder.instance.withEntityStore(callable)
     }
     
     Object withBerkeleyDb(Map params = [:], Closure closure) {
-        if(!params.id) {
-            throw new IllegalArgumentException('You must specify a value for id: when using withBerkeleyDb().')
-        }
-
-        Map dbBucket = DATABASES[params.id]
-        if(!dbBucket) {
-            dbBucket = createDatabaseBucket(params.id)
-            DATABASES[params.id] = dbBucket
-        }
-
-        if(dbBucket.db.config.transactional) {
-            TransactionConfig txnConfig = params.txnConfig ?: dbBucket.txnConfig
-            Transaction txn = EnvironmentHolder.instance.environment.beginTransaction(null, txnConfig)
-            try {
-                Object result = closure(dbBucket.db, txn)
-                txn.commit()
-                return result
-            } catch(Exception ex) {
-                txn.abort()
-                throw ex
-            }
-        } else {
-            return closure(dbBucket.db, null)
-        }
+        return EnvironmentHolder.instance.withBerkeleyDb(callable)
     }
 
     public <T> T withBerkeleyDb(Map params = [:], CallableWithArgs<T> callable) {
-        if(!params.id) {
-            throw new IllegalArgumentException('You must specify a value for id: when using withBerkeleyDb().')
-        }
-
-        Map dbBucket = DATABASES[params.id]
-        if(!dbBucket) {
-            dbBucket = createDatabaseBucket(params.id)
-            DATABASES[params.id] = dbBucket
-        }
-
-        if(dbBucket.db.config.transactional) {
-            TransactionConfig txnConfig = params.txnConfig ?: dbBucket.txnConfig
-            Transaction txn = EnvironmentHolder.instance.environment.beginTransaction(null, txnConfig)
-            try {
-                callable.args = [dbBucket.db, txn] as Object[]
-                T result = callable.run()
-                txn.commit()
-                return result
-            } catch(Exception ex) {
-                txn.abort()
-                throw ex
-            }
-        } else {
-            callable.args = [dbBucket.db, null] as Object[]
-            return callable.run()
-        }
+        return EnvironmentHolder.instance.withBerkeleyDb(callable)
     }
 
     Object withBerkeleyCursor(Map params = [:], Closure closure) {
-        if(!params.id) {
-            throw new IllegalArgumentException('You must specify a value for id: when using withBerkeleyCursor().')
-        }
-
-        Map dbBucket = DATABASES[params.id]
-        if(!dbBucket) {
-            dbBucket = createDatabaseBucket(params.id)
-            DATABASES[params.id] = dbBucket
-        }
-
-        if(dbBucket.db.config.transactional) {
-            TransactionConfig txnConfig = params.txnConfig ?: dbBucket.txnConfig
-            CursorConfig cursorConfig = params.cursorConfig ?: dbBucket.cursorConfig
-            Transaction txn = EnvironmentHolder.instance.environment.beginTransaction(null, txnConfig)
-            try {
-                Object result = closure(dbBucket.db.openCursor(txn, cursorConfig), txn)
-                txn.commit()
-                return result
-            } catch(Exception ex) {
-                txn.abort()
-                throw ex
-            }
-        } else {
-            return closure(dbBucket.db.openCursor(null, cursorConfig), null)
-        }
+        return EnvironmentHolder.instance.withBerkeleyCursor(callable)
     }
 
     public <T> T withBerkeleyCursor(Map params = [:], CallableWithArgs<T> callable) {
-        if(!params.id) {
-            throw new IllegalArgumentException('You must specify a value for id: when using withBerkeleyCursor().')
-        }
-
-        Map dbBucket = DATABASES[params.id]
-        if(!dbBucket) {
-            dbBucket = createDatabaseBucket(params.id)
-            DATABASES[params.id] = dbBucket
-        }
-
-        if(dbBucket.db.config.transactional) {
-            TransactionConfig txnConfig = params.txnConfig ?: dbBucket.txnConfig
-            CursorConfig cursorConfig = params.cursorConfig ?: dbBucket.cursorConfig
-            Transaction txn = EnvironmentHolder.instance.environment.beginTransaction(null, txnConfig)
-            try {
-                callable.args = [dbBucket.db.openCursor(txn, cursorConfig), txn] as Object[]
-                T result = callable.run()
-                txn.commit()
-                return result
-            } catch(Exception ex) {
-                txn.abort()
-                throw ex
-            }
-        } else {
-            callable.args = [dbBucket.db.openCursor(null, cursorConfig), null] as Object[]
-            return callable.run()
-        }
+        return EnvironmentHolder.instance.withBerkeleyCursor(callable)
     }
 
     // ======================================================
@@ -266,7 +90,7 @@ final class BerkeleydbConnector {
         bootstrap = app.class.classLoader.loadClass('BootstrapBerkeleydb').newInstance()
         bootstrap.metaClass.app = app
         bootstrap.init(EnvironmentHolder.instance.environment)
-        app.event('BerkeleydbConnectEnd', [EnvironmentHolder.instance.environment])
+        app.event('BerkeleydbConnectEnd', [config, EnvironmentHolder.instance.environment])
     }
 
     void disconnect(GriffonApplication app, ConfigObject config) {
@@ -309,25 +133,15 @@ final class BerkeleydbConnector {
             // 3 - assume key is a valid config param
             envConfig.setConfigParam(key, value?.toString())
         }
-        enhance(Environment.metaClass)
+        BerkeleydbEnhancer.enhance(Environment.metaClass)
         EnvironmentHolder.instance.environment = new Environment(envhomeDir, envConfig)
     }
 
     private void stopEnvironment(config) {
-        ENTITY_STORES.each { id, storeBucket -> storeBucket.store.close() }
-        DATABASES.each { id, dbBucket ->
-            dbBucket.db.with {
-                sync()
-                close()
-            }
-        }
-        EnvironmentHolder.instance.environment.with {
-            cleanLog()
-            close()
-        }
+        EnvironmentHolder.instance.stopAll()
     }
 
-    private Map createStoreBucket(String storeId) {
+    Map createStoreBucket(String storeId) {
         def config = createConfig(app)
         StoreConfig storeConfig = new StoreConfig()
         TransactionConfig txnConfig = new TransactionConfig()
@@ -346,7 +160,7 @@ final class BerkeleydbConnector {
          txnConfig: txnConfig]
     }
 
-    private Map createDatabaseBucket(String dbId) {
+    Map createDatabaseBucket(String dbId) {
         def config = createConfig(app)
         DatabaseConfig dbConfig = new DatabaseConfig()
         TransactionConfig txnConfig = new TransactionConfig()
