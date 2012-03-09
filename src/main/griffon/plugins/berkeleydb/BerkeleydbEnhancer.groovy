@@ -16,14 +16,19 @@
 package griffon.plugins.berkeleydb
 
 import griffon.util.CallableWithArgs
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * @author Andres Almiray
  */
 final class BerkeleydbEnhancer {
+    private static final Logger LOG = LoggerFactory.getLogger(BerkeleydbEnhancer)
+
     private BerkeleydbEnhancer() {}
     
     static void enhance(MetaClass mc, BerkeleydbProvider provider = EnvironmentHolder.instance) {
+        if(LOG.debugEnabled) LOG.debug("Enhancing $mc with $provider")
         mc.withBerkeleyEnv = {Closure closure ->
             provider.withBerkeleyEnv(closure)
         }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import griffon.core.GriffonClass
 import griffon.core.GriffonApplication
 import griffon.plugins.berkeleydb.BerkeleydbConnector
 import griffon.plugins.berkeleydb.BerkeleydbEnhancer
@@ -27,16 +28,19 @@ class BerkeleydbGriffonAddon {
         BerkeleydbConnector.instance.connect(app, config)
     }
 
+    void addonPostInit(GriffonApplication app) {
+        def types = app.config.griffon?.berkeleydb?.injectInto ?: ['controller']
+        for(String type : types) {
+            for(GriffonClass gc : app.artifactManager.getClassesOfType(type)) {
+                BerkeleydbEnhancer.enhance(gc.metaClass)
+            }
+        }
+    }
+
     def events = [
         ShutdownStart: { app ->
             ConfigObject config = BerkeleydbConnector.instance.createConfig(app)
             BerkeleydbConnector.instance.disconnect(app, config)
-        },
-        NewInstance: { klass, type, instance ->
-            def types = app.config.griffon?.berkeleydb?.injectInto ?: ['controller']
-            if(!types.contains(type)) return
-            def mc = app.artifactManager.findGriffonClass(klass).metaClass
-            BerkeleydbEnhancer.enhance(mc)
         }
     ]
 }
