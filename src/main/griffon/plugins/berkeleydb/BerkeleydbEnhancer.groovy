@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package griffon.plugins.berkeleydb
 
 import griffon.util.CallableWithArgs
@@ -26,7 +27,7 @@ final class BerkeleydbEnhancer {
     private static final Logger LOG = LoggerFactory.getLogger(BerkeleydbEnhancer)
 
     private BerkeleydbEnhancer() {}
-    
+
     static void enhance(MetaClass mc, BerkeleydbProvider provider = EnvironmentHolder.instance) {
         if(LOG.debugEnabled) LOG.debug("Enhancing $mc with $provider")
         mc.withBerkeleyEnv = {Closure closure ->

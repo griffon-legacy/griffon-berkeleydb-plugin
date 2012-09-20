@@ -19,9 +19,9 @@
  */
 class BerkeleydbGriffonPlugin {
     // the plugin version
-    String version = '0.6'
+    String version = '0.7'
     // the version or versions of Griffon the plugin is designed for
-    String griffonVersion = '0.9.5 > *'
+    String griffonVersion = '1.1.0 > *'
     // the other plugins this plugin depends on
     Map dependsOn = [:]
     // resources that are included in plugin packaging
@@ -169,7 +169,7 @@ fails regardless of the arguments it receives
         Object withBerkeleyCursor(Map params = [:], Closure closure) { null }
         public <T> T withBerkeleyCursor(Map params = [:], CallableWithArgs<T> callable) { null }
     }
-    
+
 This implementation may be used in the following way
 
     class MyServiceTests extends GriffonUnitTestCase {

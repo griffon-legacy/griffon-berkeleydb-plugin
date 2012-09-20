@@ -37,7 +37,7 @@ class BerkeleydbGriffonAddon {
         }
     }
 
-    def events = [
+    Map events = [
         ShutdownStart: { app ->
             ConfigObject config = BerkeleydbConnector.instance.createConfig(app)
             BerkeleydbConnector.instance.disconnect(app, config)

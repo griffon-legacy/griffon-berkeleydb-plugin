@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package griffon.plugins.berkeleydb
 
 import griffon.core.GriffonApplication
 import griffon.util.Metadata
 import griffon.util.CallableWithArgs
+import griffon.util.ConfigUtils
 import griffon.util.Environment as GE
 import com.sleepycat.je.*
 import com.sleepycat.persist.*
@@ -74,8 +76,7 @@ final class BerkeleydbConnector implements BerkeleydbProvider {
     // ======================================================
 
     ConfigObject createConfig(GriffonApplication app) {
-        def configClass = app.class.classLoader.loadClass('BerkeleydbConfig')
-        return configSlurper.parse(configClass)
+        ConfigUtils.loadConfigWithI18n('BerkeleydbConfig')
     }
 
     void connect(GriffonApplication app, ConfigObject config) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package griffon.plugins.berkeleydb
 
 import com.sleepycat.je.*
@@ -32,7 +33,7 @@ class EnvironmentHolder implements BerkeleydbProvider {
     Object withBerkeleyEnv(Closure closure) {
         return closure(environment)
     }
-    
+
     public <T> T withBerkeleyEnv(CallableWithArgs<T> callable) {
         callable.args = [environment] as Object[]
         return callable.run()
@@ -91,7 +92,7 @@ class EnvironmentHolder implements BerkeleydbProvider {
 
         storeBucket
     }
-    
+
     Object withBerkeleyDb(Map params = [:], Closure closure) {
         Map storeBucket = fetchDatabaseBucket(params)
 

@@ -8,7 +8,7 @@ griffon.project.dependency.resolution = {
         flatDir name: "berkeleydbLibDir", dirs: ["${basePath}lib"]
     }
     dependencies {
-        compile 'com.sleepycat:berkeleydb-je:5.0.34'
+        compile 'com.sleepycat:berkeleydb-je:5.0.58'
     }
 }
 

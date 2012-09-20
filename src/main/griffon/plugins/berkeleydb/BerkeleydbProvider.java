@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package griffon.plugins.berkeleydb;
 
 import java.util.Map;
@@ -28,26 +29,26 @@ public interface BerkeleydbProvider {
     <T> T withBerkeleyEnv(CallableWithArgs<T> callable);
 
     Object withEntityStore(Closure closure);
-    
+
     Object withEntityStore(Map params, Closure closure);
 
     <T> T withEntityStore(CallableWithArgs<T> callable);
-    
+
     <T> T withEntityStore(Map params, CallableWithArgs<T> callable);
-    
+
     Object withBerkeleyDb(Closure closure);
-    
+
     Object withBerkeleyDb(Map params, Closure closure);
 
     <T> T withBerkeleyDb(CallableWithArgs<T> callable);
-    
+
     <T> T withBerkeleyDb(Map params, CallableWithArgs<T> callable);
 
     Object withBerkeleyCursor(Closure closure);
-    
+
     Object withBerkeleyCursor(Map params, Closure closure);
 
     <T> T withBerkeleyCursor(CallableWithArgs<T> callable);
-    
+
     <T> T withBerkeleyCursor(Map params, CallableWithArgs<T> callable);
 }
